@@ -14,15 +14,9 @@ RUN apt-get update && \
 # Set the working directory
 WORKDIR /app
 
-# Copy requirements.txt if you have any dependencies
-COPY requirements.txt .
-
-# Install Python dependencies
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
-
 # Install JupyterLab
-RUN pip install jupyterlab
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir jupyterlab
 
 # Expose the port JupyterLab will run on
 EXPOSE 8888
