@@ -724,8 +724,117 @@
             }
         }
 
+    
         function updateRtmpUrl() {
             const preset = document.getElementById('rtmpPreset').value;
             const rtmpUrlInput = document.getElementById('rtmpUrl');
-            
-            if (preset && preset
+            if (preset && preset !== 'custom') {
+                rtmpUrlInput.value = preset;
+                rtmpUrlInput.readOnly = true;
+            } else if (preset === 'custom') {
+                rtmpUrlInput.value = '';
+                rtmpUrlInput.readOnly = false;
+                rtmpUrlInput.focus();
+            } else {
+                rtmpUrlInput.value = '';
+                rtmpUrlInput.readOnly = false;
+            }
+        }
+
+        function toggleStreamKey() {
+            const input = document.getElementById('streamKey');
+            const icon = document.getElementById('streamKeyToggle');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        function showAlert(message, type = 'success') {
+            let alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.innerHTML = `<i class="fas fa-info-circle"></i> ${message}`;
+            document.querySelector('.container').prepend(alert);
+            setTimeout(() => alert.remove(), 3500);
+        }
+
+        // File Upload Logic
+        const fileInput = document.getElementById('fileInput');
+        const uploadArea = document.getElementById('uploadArea');
+        const uploadProgress = document.getElementById('uploadProgress');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            if (!files.length) return;
+            uploadProgress.style.display = 'block';
+            progressBar.style.width = '0%';
+            progressText.textContent = 'Uploading...';
+
+            // Dummy upload simulation
+            let uploaded = 0;
+            const total = files.length;
+            function simulateUpload() {
+                uploaded++;
+                progressBar.style.width = `${(uploaded / total) * 100}%`;
+                if (uploaded < total) {
+                    setTimeout(simulateUpload, 400);
+                } else {
+                    progressText.textContent = 'Upload Complete!';
+                    setTimeout(() => uploadProgress.style.display = 'none', 1000);
+                    showAlert('Files uploaded successfully!', 'success');
+                    // TODO: Add files to the list dynamically
+                }
+            }
+            simulateUpload();
+        }
+
+        // Playlist File Controls (Dummy)
+        function moveFile(btn, dir) {
+            showAlert(`Move file ${dir} (UI only, needs backend)`, 'success');
+        }
+        function deleteFile(btn, filename) {
+            showAlert(`Deleted file: ${filename} (UI only, needs backend)`, 'success');
+            btn.closest('.file-item').remove();
+        }
+        function sortFiles(criteria) {
+            showAlert('Sorted playlist (UI only, needs backend)', 'success');
+        }
+        function shufflePlaylist() {
+            showAlert('Shuffled playlist (UI only, needs backend)', 'success');
+        }
+
+        // Stream Control Buttons (Dummy)
+        function startStream() {
+            updateStreamStatus('demo-stream', 'streaming', 'Stream started!');
+        }
+        function restartStream() {
+            updateStreamStatus('demo-stream', 'streaming', 'Stream restarted!');
+        }
+        function stopStream() {
+            updateStreamStatus('demo-stream', 'stopped', 'Stream stopped.');
+        }
+    </script>
+</body>
+</html>
