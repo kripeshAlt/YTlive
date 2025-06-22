@@ -44,6 +44,8 @@
     destination: (req, file, cb) => {
       const streamId = req.params.streamId || req.body.streamId;
       const streamDir = path.join(UPLOADS_DIR, streamId);
+      console.log(streamId,streamDir,req.params.streamId,req.body.streamId);
+      
       fs.ensureDirSync(streamDir);
       cb(null, streamDir);
     },
@@ -55,9 +57,11 @@
   const upload = multer({ 
     storage: storage,
     fileFilter: (req, file, cb) => {
-      const allowedTypes = /mp4|mp3|wav|avi|mov|wmv|flv|webm|m4a|aac/;
+      const allowedTypes = /mp4|mp3|mpeg|wav|avi|mov|wmv|flv|webm|m4a|aac/;
       const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
       const mimetype = allowedTypes.test(file.mimetype);
+      console.log(extname,mimetype);
+      
       
       if (mimetype && extname) {
         return cb(null, true);
@@ -77,6 +81,8 @@
   
   app.get('/stream/:streamId', (req, res) => {
     const { streamId } = req.params;
+    console.log(streamId);
+    
     const streamDir = path.join(UPLOADS_DIR, streamId);
     
     if (!fs.existsSync(streamDir)) {
@@ -84,6 +90,9 @@
     }
   
     const files = getStreamFiles(streamId);
+    
+    console.log(files);
+    
     const status = streamStatus.get(streamId) || 'stopped';
     
     res.render('stream', {
@@ -115,6 +124,7 @@
   
   app.post('/upload/:streamId', upload.array('files', 10), (req, res) => {
     const { streamId } = req.params;
+    console.log(streamId);
     
     if (!req.files || req.files.length === 0) {
       return res.redirect(`/stream/${streamId}?error=No files uploaded`);
@@ -123,9 +133,8 @@
     res.redirect(`/stream/${streamId}?success=Files uploaded successfully`);
   });
   
-  app.post('/start-stream/:streamId', (req, res) => {
-    const { streamId } = req.params;
-    const { rtmpUrl, streamKey } = req.body;
+  app.post('/start-stream', (req, res) => {
+    const { streamId,rtmpUrl, streamKey } = req.body;
     
     if (!rtmpUrl || !streamKey) {
       return res.json({ 

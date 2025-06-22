@@ -387,32 +387,32 @@
                 <div>
                     <h2 class="card-title">
                         <i class="fas fa-video"></i>
-                        Stream: demo-stream
+                        Stream: <%= streamId %>
                     </h2>
                     <p style="color: var(--muted-text); margin-top: 0.5rem;">
                         Configure your live streaming settings and manage your content
                     </p>
                 </div>
-                <span class="status status-stopped" data-stream-id="demo-stream">
-                    stopped
+                <span class="status status-<%= stream.status %>" data-stream-id="<%= streamId %>">
+                    <%= stream.status %>
                 </span>
             </div>
 
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-value" id="fileCount">3</div>
+                    <div class="stat-value" id="fileCount"><%= stream.stats.fileCount || 0 %></div>
                     <div class="stat-label">Media Files</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value" id="totalSize">156 MB</div>
+                    <div class="stat-value" id="totalSize"><%= stream.stats.totalSize || '0 B' %></div>
                     <div class="stat-label">Total Size</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value" id="duration">--:--</div>
+                    <div class="stat-value" id="duration"><%= stream.stats.duration || '--:--' %></div>
                     <div class="stat-label">Stream Duration</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value" id="viewers">0</div>
+                    <div class="stat-value" id="viewers"><%= stream.stats.viewers || 0 %></div>
                     <div class="stat-label">Viewers</div>
                 </div>
             </div>
@@ -431,42 +431,50 @@
                 <div class="form-group">
                     <label class="form-label">Stream Type</label>
                     <select id="streamType" class="form-control select-control" onchange="toggleStreamOptions()">
-                        <option value="video">Video + Audio</option>
-                        <option value="audio">Audio Only</option>
+                        <option value="video" <%= stream.settings.streamType === 'video' ? 'selected' : '' %>>Video + Audio</option>
+                        <option value="audio" <%= stream.settings.streamType === 'audio' ? 'selected' : '' %>>Audio Only</option>
                     </select>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">Quality Preset</label>
-                    <div
-                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.5rem;">
-                        <button class="preset-btn active" onclick="selectPreset(this, '720p')">720p HD</button>
-                        <button class="preset-btn" onclick="selectPreset(this, '1080p')">1080p FHD</button>
-                        <button class="preset-btn" onclick="selectPreset(this, '480p')">480p SD</button>
-                        <button class="preset-btn" onclick="selectPreset(this, 'custom')">Custom</button>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.5rem;">
+                        <% const presets = ['720p', '1080p', '480p', 'custom']; %>
+                        <% presets.forEach(preset => { %>
+                            <button class="preset-btn <%= stream.settings.preset === preset ? 'active' : '' %>" 
+                                    onclick="selectPreset(this, '<%= preset %>')">
+                                <%= preset === 'custom' ? 'Custom' : preset.toUpperCase() %>
+                                <%= preset !== 'custom' ? (preset === '720p' ? ' HD' : preset === '1080p' ? ' FHD' : ' SD') : '' %>
+                            </button>
+                        <% }); %>
                     </div>
                 </div>
 
-                <div id="customSettings" style="display: none;">
+                <div id="customSettings" <%= `style="display: ${stream.settings.preset === 'custom' ? 'block' : 'none'};"` %> >
                     <div class="form-group">
                         <label class="form-label">Resolution</label>
                         <select class="form-control select-control">
-                            <option>1920x1080</option>
-                            <option selected>1280x720</option>
-                            <option>854x480</option>
-                            <option>640x360</option>
+                            <% const resolutions = ['1920x1080', '1280x720', '854x480', '640x360']; %>
+                            <% resolutions.forEach(resolution => { %>
+                                <option value="<%= resolution %>" <%= stream.settings.resolution === resolution ? 'selected' : '' %>>
+                                    <%= resolution %>
+                                </option>
+                            <% }); %>
                         </select>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Bitrate (kbps)</label>
-                        <input type="number" class="form-control" value="2500" min="500" max="8000">
+                        <input type="number" class="form-control" value="<%= stream.settings.bitrate || 2500 %>" min="500" max="8000">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Frame Rate</label>
                         <select class="form-control select-control">
-                            <option>24</option>
-                            <option>30</option>
-                            <option selected>60</option>
+                            <% const frameRates = [24, 30, 60]; %>
+                            <% frameRates.forEach(rate => { %>
+                                <option value="<%= rate %>" <%= stream.settings.frameRate === rate ? 'selected' : '' %>>
+                                    <%= rate %>
+                                </option>
+                            <% }); %>
                         </select>
                     </div>
                 </div>
@@ -475,41 +483,58 @@
                     <label class="form-label">RTMP Server URL</label>
                     <select id="rtmpPreset" class="form-control select-control" onchange="updateRtmpUrl()">
                         <option value="">Select Platform</option>
-                        <option value="rtmp://a.rtmp.youtube.com/live2">YouTube Live</option>
-                        <option value="rtmp://live.twitch.tv/live">Twitch</option>
-                        <option value="rtmp://live-api-s.facebook.com:80/rtmp">Facebook Live</option>
-                        <option value="custom">Custom RTMP URL</option>
+                        <% const platforms = [
+                            { value: 'rtmp://a.rtmp.youtube.com/live2', name: 'YouTube Live' },
+                            { value: 'rtmp://live.twitch.tv/live', name: 'Twitch' },
+                            { value: 'rtmp://live-api-s.facebook.com:80/rtmp', name: 'Facebook Live' },
+                            { value: 'custom', name: 'Custom RTMP URL' }
+                        ]; %>
+                        <% platforms.forEach(platform => { %>
+                            <option value="<%= platform.value %>" <%= stream.settings.rtmpUrl === platform.value ? 'selected' : '' %>>
+                                <%= platform.name %>
+                            </option>
+                        <% }); %>
                     </select>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">RTMP URL</label>
-                    <input type="text" id="rtmpUrl" class="form-control" placeholder="rtmp://a.rtmp.youtube.com/live2"
-                        value="rtmp://a.rtmp.youtube.com/live2">
+                    <input type="text" id="rtmpUrl" class="form-control" 
+                           placeholder="rtmp://a.rtmp.youtube.com/live2"
+                           value="<%= stream.settings.rtmpUrl || 'rtmp://a.rtmp.youtube.com/live2' %>">
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">Stream Key</label>
                     <div style="position: relative;">
-                        <input type="password" id="streamKey" class="form-control" placeholder="Your stream key"
-                            style="padding-right: 3rem;">
+                        <input type="password" id="streamKey" class="form-control" 
+                               placeholder="Your stream key" value="<%= stream.settings.streamKey || '' %>"
+                               style="padding-right: 3rem;">
                         <button type="button" onclick="toggleStreamKey()"
-                            style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--muted-text); cursor: pointer;">
+                                style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--muted-text); cursor: pointer;">
                             <i class="fas fa-eye" id="streamKeyToggle"></i>
                         </button>
                     </div>
                 </div>
 
                 <div class="controls">
-                    <button class="btn btn-success" onclick="startStream()">
-                        <i class="fas fa-play"></i> Start Stream
-                    </button>
-                    <button class="btn btn-warning" onclick="restartStream()">
-                        <i class="fas fa-redo"></i> Restart
-                    </button>
-                    <button class="btn btn-danger" onclick="stopStream()">
-                        <i class="fas fa-stop"></i> Stop
-                    </button>
+                    <% if (stream.status === 'streaming') { %>
+                        <button class="btn btn-warning" onclick="restartStream()">
+                            <i class="fas fa-redo"></i> Restart
+                        </button>
+                        <button class="btn btn-danger" onclick="stopStream()">
+                            <i class="fas fa-stop"></i> Stop
+                        </button>
+                    <% } else { %>
+                        <button class="btn btn-success" onclick="startStream()">
+                            <i class="fas fa-play"></i> Start Stream
+                        </button>
+                        <% if (stream.status === 'stopped' && stream.files.length > 0) { %>
+                            <button class="btn btn-warning" onclick="restartStream()">
+                                <i class="fas fa-redo"></i> Restart
+                            </button>
+                        <% } %>
+                    <% } %>
                 </div>
             </div>
 
@@ -568,77 +593,41 @@
             </div>
 
             <div id="filesList">
-                <div class="file-item">
-                    <div class="file-info">
-                        <i class="fas fa-video" style="color: var(--primary-color);"></i>
-                        <div>
-                            <div style="font-weight: 600;">sample_video_1.mp4</div>
-                            <div style="font-size: 0.75rem; color: var(--muted-text);">
-                                52.3 MB • 1920x1080 • 02:35
+                <% if (stream.files && stream.files.length > 0) { %>
+                    <% stream.files.forEach((file, index) => { %>
+                        <div class="file-item" data-filename="<%= file.filename %>" data-index="<%= index %>">
+                            <div class="file-info">
+                                <i class="<%= file.type && file.type.startsWith('video/') ? 'fas fa-video' : 'fas fa-music' %>" 
+                                    <%= `style="color: ${file.type && file.type.startsWith('video/') ? 'var(--primary-color)' : 'var(--accent-color)'};"` %> ></i>
+                                <div>
+                                    <div style="font-weight: 600;"><%= file.filename %></div>
+                                    <div style="font-size: 0.75rem; color: var(--muted-text);">
+                                        <%= file.sizeFormatted || 'Unknown size' %> • 
+                                        <%= file.resolution || file.bitrate || 'Unknown quality' %> • 
+                                        <%= file.duration || 'Unknown duration' %>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <button class="btn btn-ghost" style="padding: 0.5rem;" onclick="moveFile('<%= index %>', 'up')">
+                                    <i class="fas fa-arrow-up"></i>
+                                </button>
+                                <button class="btn btn-ghost" style="padding: 0.5rem;" onclick="moveFile('<%= index %>', 'down')">
+                                    <i class="fas fa-arrow-down"></i>
+                                </button>
+                                <button class="btn btn-danger" style="padding: 0.5rem;" onclick="deleteFile('<%= file.filename %>')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
                             </div>
                         </div>
+                    <% }); %>
+                <% } else { %>
+                    <div style="text-align: center; padding: 2rem; color: var(--muted-text);">
+                        <i class="fas fa-music" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                        <p>No media files uploaded yet.</p>
+                        <p>Upload some files to get started!</p>
                     </div>
-                    <div style="display: flex; gap: 0.5rem; align-items: center;">
-                        <button class="btn btn-ghost" style="padding: 0.5rem;" onclick="moveFile(this, 'up')">
-                            <i class="fas fa-arrow-up"></i>
-                        </button>
-                        <button class="btn btn-ghost" style="padding: 0.5rem;" onclick="moveFile(this, 'down')">
-                            <i class="fas fa-arrow-down"></i>
-                        </button>
-                        <button class="btn btn-danger" style="padding: 0.5rem;"
-                            onclick="deleteFile(this, 'sample_video_1.mp4')">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="file-item">
-                    <div class="file-info">
-                        <i class="fas fa-music" style="color: var(--accent-color);"></i>
-                        <div>
-                            <div style="font-weight: 600;">background_music.mp3</div>
-                            <div style="font-size: 0.75rem; color: var(--muted-text);">
-                                8.7 MB • 320kbps • 03:42
-                            </div>
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 0.5rem; align-items: center;">
-                        <button class="btn btn-ghost" style="padding: 0.5rem;" onclick="moveFile(this, 'up')">
-                            <i class="fas fa-arrow-up"></i>
-                        </button>
-                        <button class="btn btn-ghost" style="padding: 0.5rem;" onclick="moveFile(this, 'down')">
-                            <i class="fas fa-arrow-down"></i>
-                        </button>
-                        <button class="btn btn-danger" style="padding: 0.5rem;"
-                            onclick="deleteFile(this, 'background_music.mp3')">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="file-item">
-                    <div class="file-info">
-                        <i class="fas fa-video" style="color: var(--primary-color);"></i>
-                        <div>
-                            <div style="font-weight: 600;">intro_sequence.mp4</div>
-                            <div style="font-size: 0.75rem; color: var(--muted-text);">
-                                95.2 MB • 1280x720 • 01:45
-                            </div>
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 0.5rem; align-items: center;">
-                        <button class="btn btn-ghost" style="padding: 0.5rem;" onclick="moveFile(this, 'up')">
-                            <i class="fas fa-arrow-up"></i>
-                        </button>
-                        <button class="btn btn-ghost" style="padding: 0.5rem;" onclick="moveFile(this, 'down')">
-                            <i class="fas fa-arrow-down"></i>
-                        </button>
-                        <button class="btn btn-danger" style="padding: 0.5rem;"
-                            onclick="deleteFile(this, 'intro_sequence.mp4')">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
+                <% } %>
             </div>
         </div>
 
@@ -652,601 +641,634 @@
             </div>
 
             <div class="grid grid-3">
-                <div class="stat-card">
-                    <div class="stat-value" style="color: var(--success-color);">98.5%</div>
-                    <div class="stat-label">Uptime</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" style="color: var(--warning-color);">2.4 Mbps</div>
-                    <div class="stat-label">Avg Bitrate</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" style="color: var(--accent-color);">58 fps</div>
-                    <div class="stat-label">Frame Rate</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">12ms</div>
-                    <div class="stat-label">Latency</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">0</div>
-                    <div class="stat-label">Dropped Frames</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">5.2 GB</div>
-                    <div class="stat-label">Data Sent</div>
-                </div>
+                <% const analytics = [
+                    { label: 'Uptime', value: stream.analytics.uptime || '0%', color: 'var(--success-color)' },
+                    { label: 'Avg Bitrate', value: stream.analytics.avgBitrate || '0 Mbps', color: 'var(--warning-color)' },
+                    { label: 'Frame Rate', value: stream.analytics.frameRate || '0 fps', color: 'var(--accent-color)' },
+                    { label: 'Latency', value: stream.analytics.latency || '0ms', color: null },
+                    { label: 'Dropped Frames', value: stream.analytics.droppedFrames || '0', color: null },
+                    { label: 'Data Sent', value: stream.analytics.dataSent || '0 B', color: null }
+                ]; %>
+                
+                <% analytics.forEach(stat => { %>
+                    <div class="stat-card">
+                        <div class="stat-value" <% if (stat.color) { %>style="color: <%= stat.color %>;"<% } %>>
+                            <%= stat.value %>
+                        </div>
+                        <div class="stat-label"><%= stat.label %></div>
+                    </div>
+                <% }); %>
             </div>
         </div>
     </div>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
-    <script>
-        const socket = io();
-        let currentStatus = 'stopped';
-        let streamData = {
-            streamId: 'demo-stream',
-            files: [],
-            stats: {
-                fileCount: 0,
-                totalSize: 0,
-                duration: 0,
-                viewers: 0,
-                uptime: 0,
-                avgBitrate: 0,
-                frameRate: 0,
-                latency: 0,
-                droppedFrames: 0,
-                dataSent: 0
+<script>
+    const socket = io();
+    let currentStatus = 'stopped';
+    let streamData = {
+        streamId: '<%= streamId %>',
+        files: [],
+        stats: {
+            fileCount: 0,
+            totalSize: 0,
+            duration: 0,
+            viewers: 0,
+            uptime: 0,
+            avgBitrate: 0,
+            frameRate: 0,
+            latency: 0,
+            droppedFrames: 0,
+            dataSent: 0
+        }
+    };
+    console.log(streamData.files)
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function () {
+        // Check for URL parameters (success/error messages)
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('success')) {
+            showAlert(urlParams.get('success'), 'success');
+            // Clean URL without refreshing
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        if (urlParams.get('error')) {
+            showAlert(urlParams.get('error'), 'error');
+            // Clean URL without refreshing
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        loadStreamData();
+        updateUI();
+    });
+
+    // Socket event listeners
+    socket.on('streamStatus', (data) => {
+        updateStreamStatus(data.streamId, data.status, data.message);
+    });
+
+    socket.on('streamStats', (data) => {
+        updateStreamStats(data);
+    });
+
+    socket.on('fileUploaded', (data) => {
+        addFileToPlaylist(data);
+        updateStreamStats();
+    });
+
+    socket.on('fileDeleted', (data) => {
+        removeFileFromPlaylist(data.filename);
+        updateStreamStats();
+    });
+
+    // Load initial stream data
+    async function loadStreamData() {
+        try {
+            const response = await fetch(`/api/streams/${streamData.streamId}`);
+            const data = await response.json();
+            if (data.success) {
+                streamData = { ...streamData, ...data.stream };
+                updateUI();
             }
+        } catch (error) {
+            console.error('Failed to load stream data:', error);
+            showAlert('Failed to load stream data', 'error');
+        }
+    }
+
+    function updateStreamStatus(streamId, status, message) {
+        const statusElement = document.querySelector(`[data-stream-id="${streamId}"]`);
+        if (statusElement) {
+            statusElement.className = `status status-${status}`;
+            statusElement.textContent = status;
+            currentStatus = status;
+        }
+
+        if (message) {
+            showAlert(message, status === 'error' ? 'error' : 'success');
+        }
+    }
+
+    function updateStreamStats(data = null) {
+        if (data) {
+            streamData.stats = { ...streamData.stats, ...data };
+        }
+
+        // Update file stats
+        streamData.stats.fileCount = streamData.files.length;
+        streamData.stats.totalSize = streamData.files.reduce((total, file) => total + (file.size || 0), 0);
+
+        // Update UI elements
+        document.getElementById('fileCount').textContent = streamData.stats.fileCount;
+        document.getElementById('totalSize').textContent = formatFileSize(streamData.stats.totalSize);
+        document.getElementById('duration').textContent = formatDuration(streamData.stats.duration);
+        document.getElementById('viewers').textContent = streamData.stats.viewers;
+
+        // Update analytics
+        const analyticsElements = {
+            uptime: document.querySelector('.stat-card .stat-value[style*="success-color"]'),
+            avgBitrate: document.querySelector('.stat-card .stat-value[style*="warning-color"]'),
+            frameRate: document.querySelector('.stat-card .stat-value[style*="accent-color"]'),
+            latency: document.querySelectorAll('.stat-card .stat-value')[3],
+            droppedFrames: document.querySelectorAll('.stat-card .stat-value')[4],
+            dataSent: document.querySelectorAll('.stat-card .stat-value')[5]
         };
 
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function () {
-            loadStreamData();
-            updateUI();
+        if (analyticsElements.uptime) analyticsElements.uptime.textContent = `${streamData.stats.uptime.toFixed(1)}%`;
+        if (analyticsElements.avgBitrate) analyticsElements.avgBitrate.textContent = `${streamData.stats.avgBitrate.toFixed(1)} Mbps`;
+        if (analyticsElements.frameRate) analyticsElements.frameRate.textContent = `${streamData.stats.frameRate} fps`;
+        if (analyticsElements.latency) analyticsElements.latency.textContent = `${streamData.stats.latency}ms`;
+        if (analyticsElements.droppedFrames) analyticsElements.droppedFrames.textContent = streamData.stats.droppedFrames;
+        if (analyticsElements.dataSent) analyticsElements.dataSent.textContent = formatFileSize(streamData.stats.dataSent);
+    }
+
+    function formatDuration(seconds) {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    function toggleStreamOptions() {
+        const streamType = document.getElementById('streamType').value;
+        // Show/hide video-specific options based on stream type
+        const videoOptions = document.querySelectorAll('.video-only-option');
+        videoOptions.forEach(option => {
+            option.style.display = streamType === 'audio' ? 'none' : 'block';
+        });
+    }
+
+    function selectPreset(button, preset) {
+        document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+
+        const customSettings = document.getElementById('customSettings');
+        if (preset === 'custom') {
+            customSettings.style.display = 'block';
+        } else {
+            customSettings.style.display = 'none';
+            applyPresetSettings(preset);
+        }
+    }
+
+    function applyPresetSettings(preset) {
+        const settings = {
+            '720p': { resolution: '1280x720', bitrate: 2500, frameRate: 30 },
+            '1080p': { resolution: '1920x1080', bitrate: 4500, frameRate: 30 },
+            '480p': { resolution: '854x480', bitrate: 1200, frameRate: 30 }
+        };
+
+        if (settings[preset]) {
+            const resolutionSelect = document.querySelector('#customSettings select');
+            const bitrateInput = document.querySelector('#customSettings input[type="number"]');
+            const frameRateSelect = document.querySelector('#customSettings select:last-child');
+
+            if (resolutionSelect) resolutionSelect.value = settings[preset].resolution;
+            if (bitrateInput) bitrateInput.value = settings[preset].bitrate;
+            if (frameRateSelect) frameRateSelect.value = settings[preset].frameRate;
+        }
+    }
+
+    function updateRtmpUrl() {
+        const preset = document.getElementById('rtmpPreset').value;
+        const rtmpUrlInput = document.getElementById('rtmpUrl');
+
+        if (preset && preset !== 'custom') {
+            rtmpUrlInput.value = preset;
+            rtmpUrlInput.readOnly = true;
+        } else if (preset === 'custom') {
+            rtmpUrlInput.value = '';
+            rtmpUrlInput.readOnly = false;
+            rtmpUrlInput.focus();
+        } else {
+            rtmpUrlInput.value = '';
+            rtmpUrlInput.readOnly = false;
+        }
+    }
+
+    function toggleStreamKey() {
+        const input = document.getElementById('streamKey');
+        const icon = document.getElementById('streamKeyToggle');
+
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+
+    function showAlert(message, type = 'success') {
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type}`;
+        alert.innerHTML = `<i class="fas fa-${type === 'error' ? 'exclamation-triangle' : 'info-circle'}"></i> ${message}`;
+
+        document.querySelector('.container').prepend(alert);
+        setTimeout(() => alert.remove(), 5000);
+    }
+
+    // File Upload Logic - Updated for dynamic streamId
+    const fileInput = document.getElementById('fileInput');
+    const uploadArea = document.getElementById('uploadArea');
+    const uploadProgress = document.getElementById('uploadProgress');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        handleFiles(e.dataTransfer.files);
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        handleFiles(e.target.files);
+    });
+
+    async function handleFiles(files) {
+        if (!files.length) return;
+
+        const formData = new FormData();
+        Array.from(files).forEach((file) => {
+            formData.append('files', file);
         });
 
-        // Socket event listeners
-        socket.on('streamStatus', (data) => {
-            updateStreamStatus(data.streamId, data.status, data.message);
-        });
+        uploadProgress.style.display = 'block';
+        progressBar.style.width = '0%';
+        progressText.textContent = 'Uploading...';
 
-        socket.on('streamStats', (data) => {
-            updateStreamStats(data);
-        });
+        try {
+            const xhr = new XMLHttpRequest();
 
-        socket.on('fileUploaded', (data) => {
-            addFileToPlaylist(data);
-            updateStreamStats();
-        });
-
-        socket.on('fileDeleted', (data) => {
-            removeFileFromPlaylist(data.filename);
-            updateStreamStats();
-        });
-
-        // Load initial stream data
-        async function loadStreamData() {
-            try {
-                const response = await fetch(`/api/streams/${streamData.streamId}`);
-                const data = await response.json();
-                if (data.success) {
-                    streamData = { ...streamData, ...data.stream };
-                    updateUI();
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    progressBar.style.width = `${percentComplete}%`;
+                    progressText.textContent = `Uploading... ${Math.round(percentComplete)}%`;
                 }
-            } catch (error) {
-                console.error('Failed to load stream data:', error);
-                showAlert('Failed to load stream data', 'error');
-            }
-        }
-
-        function updateStreamStatus(streamId, status, message) {
-            const statusElement = document.querySelector(`[data-stream-id="${streamId}"]`);
-            if (statusElement) {
-                statusElement.className = `status status-${status}`;
-                statusElement.textContent = status;
-                currentStatus = status;
-            }
-
-            if (message) {
-                showAlert(message, status === 'error' ? 'error' : 'success');
-            }
-        }
-
-        function updateStreamStats(data = null) {
-            if (data) {
-                streamData.stats = { ...streamData.stats, ...data };
-            }
-
-            // Update file stats
-            streamData.stats.fileCount = streamData.files.length;
-            streamData.stats.totalSize = streamData.files.reduce((total, file) => total + (file.size || 0), 0);
-
-            // Update UI elements
-            document.getElementById('fileCount').textContent = streamData.stats.fileCount;
-            document.getElementById('totalSize').textContent = formatFileSize(streamData.stats.totalSize);
-            document.getElementById('duration').textContent = formatDuration(streamData.stats.duration);
-            document.getElementById('viewers').textContent = streamData.stats.viewers;
-
-            // Update analytics
-            const analyticsElements = {
-                uptime: document.querySelector('.stat-card .stat-value[style*="success-color"]'),
-                avgBitrate: document.querySelector('.stat-card .stat-value[style*="warning-color"]'),
-                frameRate: document.querySelector('.stat-card .stat-value[style*="accent-color"]'),
-                latency: document.querySelectorAll('.stat-card .stat-value')[3],
-                droppedFrames: document.querySelectorAll('.stat-card .stat-value')[4],
-                dataSent: document.querySelectorAll('.stat-card .stat-value')[5]
-            };
-
-            if (analyticsElements.uptime) analyticsElements.uptime.textContent = `${streamData.stats.uptime.toFixed(1)}%`;
-            if (analyticsElements.avgBitrate) analyticsElements.avgBitrate.textContent = `${streamData.stats.avgBitrate.toFixed(1)} Mbps`;
-            if (analyticsElements.frameRate) analyticsElements.frameRate.textContent = `${streamData.stats.frameRate} fps`;
-            if (analyticsElements.latency) analyticsElements.latency.textContent = `${streamData.stats.latency}ms`;
-            if (analyticsElements.droppedFrames) analyticsElements.droppedFrames.textContent = streamData.stats.droppedFrames;
-            if (analyticsElements.dataSent) analyticsElements.dataSent.textContent = formatFileSize(streamData.stats.dataSent);
-        }
-
-        function formatDuration(seconds) {
-            const hours = Math.floor(seconds / 3600);
-            const minutes = Math.floor((seconds % 3600) / 60);
-            const secs = Math.floor(seconds % 60);
-            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        }
-
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 B';
-            const k = 1024;
-            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-        }
-
-        function toggleStreamOptions() {
-            const streamType = document.getElementById('streamType').value;
-            // Show/hide video-specific options based on stream type
-            const videoOptions = document.querySelectorAll('.video-only-option');
-            videoOptions.forEach(option => {
-                option.style.display = streamType === 'audio' ? 'none' : 'block';
             });
-        }
 
-        function selectPreset(button, preset) {
-            document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-
-            const customSettings = document.getElementById('customSettings');
-            if (preset === 'custom') {
-                customSettings.style.display = 'block';
-            } else {
-                customSettings.style.display = 'none';
-                applyPresetSettings(preset);
-            }
-        }
-
-        function applyPresetSettings(preset) {
-            const settings = {
-                '720p': { resolution: '1280x720', bitrate: 2500, frameRate: 30 },
-                '1080p': { resolution: '1920x1080', bitrate: 4500, frameRate: 30 },
-                '480p': { resolution: '854x480', bitrate: 1200, frameRate: 30 }
-            };
-
-            if (settings[preset]) {
-                const resolutionSelect = document.querySelector('#customSettings select');
-                const bitrateInput = document.querySelector('#customSettings input[type="number"]');
-                const frameRateSelect = document.querySelector('#customSettings select:last-child');
-
-                if (resolutionSelect) resolutionSelect.value = settings[preset].resolution;
-                if (bitrateInput) bitrateInput.value = settings[preset].bitrate;
-                if (frameRateSelect) frameRateSelect.value = settings[preset].frameRate;
-            }
-        }
-
-        function updateRtmpUrl() {
-            const preset = document.getElementById('rtmpPreset').value;
-            const rtmpUrlInput = document.getElementById('rtmpUrl');
-
-            if (preset && preset !== 'custom') {
-                rtmpUrlInput.value = preset;
-                rtmpUrlInput.readOnly = true;
-            } else if (preset === 'custom') {
-                rtmpUrlInput.value = '';
-                rtmpUrlInput.readOnly = false;
-                rtmpUrlInput.focus();
-            } else {
-                rtmpUrlInput.value = '';
-                rtmpUrlInput.readOnly = false;
-            }
-        }
-
-        function toggleStreamKey() {
-            const input = document.getElementById('streamKey');
-            const icon = document.getElementById('streamKeyToggle');
-
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            } else {
-                input.type = 'password';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            }
-        }
-
-        function showAlert(message, type = 'success') {
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${type}`;
-            alert.innerHTML = `<i class="fas fa-${type === 'error' ? 'exclamation-triangle' : 'info-circle'}"></i> ${message}`;
-
-            document.querySelector('.container').prepend(alert);
-            setTimeout(() => alert.remove(), 3500);
-        }
-
-        // File Upload Logic
-        const fileInput = document.getElementById('fileInput');
-        const uploadArea = document.getElementById('uploadArea');
-        const uploadProgress = document.getElementById('uploadProgress');
-        const progressBar = document.getElementById('progressBar');
-        const progressText = document.getElementById('progressText');
-
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.classList.add('dragover');
-        });
-
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.classList.remove('dragover');
-        });
-
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.classList.remove('dragover');
-            handleFiles(e.dataTransfer.files);
-        });
-
-        fileInput.addEventListener('change', (e) => {
-            handleFiles(e.target.files);
-        });
-
-        async function handleFiles(files) {
-            if (!files.length) return;
-
-            const formData = new FormData();
-            Array.from(files).forEach((file, index) => {
-                formData.append(`files`, file);
-            });
-            formData.append('streamId', streamData.streamId);
-
-            uploadProgress.style.display = 'block';
-            progressBar.style.width = '0%';
-            progressText.textContent = 'Uploading...';
-
-            try {
-                const xhr = new XMLHttpRequest();
-
-                xhr.upload.addEventListener('progress', (e) => {
-                    if (e.lengthComputable) {
-                        const percentComplete = (e.loaded / e.total) * 100;
-                        progressBar.style.width = `${percentComplete}%`;
-                        progressText.textContent = `Uploading... ${Math.round(percentComplete)}%`;
-                    }
-                });
-
-                xhr.addEventListener('load', () => {
-                    if (xhr.status === 200) {
-                        const response = JSON.parse(xhr.responseText);
-                        if (response.success) {
-                            progressText.textContent = 'Upload Complete!';
-                            showAlert('Files uploaded successfully!', 'success');
-
-                            // Add uploaded files to playlist
-                            response.files.forEach(file => addFileToPlaylist(file));
-                            updateStreamStats();
-                        } else {
-                            throw new Error(response.message || 'Upload failed');
-                        }
-                    } else {
-                        throw new Error('Upload failed');
-                    }
-
+            xhr.addEventListener('load', () => {
+                if (xhr.status === 200) {
+                    progressText.textContent = 'Upload Complete!';
+                    showAlert('Files uploaded successfully!', 'success');
+                    
+                    // Reload the page to show updated file list
                     setTimeout(() => {
-                        uploadProgress.style.display = 'none';
-                        fileInput.value = '';
+                        window.location.reload();
                     }, 1000);
-                });
+                } else {
+                    throw new Error('Upload failed');
+                }
+            });
 
-                xhr.addEventListener('error', () => {
-                    showAlert('Upload failed. Please try again.', 'error');
-                    uploadProgress.style.display = 'none';
-                });
-
-                xhr.open('POST', '/api/upload');
-                xhr.send(formData);
-
-            } catch (error) {
-                console.error('Upload error:', error);
+            xhr.addEventListener('error', () => {
                 showAlert('Upload failed. Please try again.', 'error');
                 uploadProgress.style.display = 'none';
-            }
-        }
-
-        // Playlist Management
-        function renderFilesList() {
-            const filesList = document.getElementById('filesList');
-            filesList.innerHTML = '';
-
-            streamData.files.forEach((file, index) => {
-                const fileItem = createFileItem(file, index);
-                filesList.appendChild(fileItem);
             });
+
+            xhr.open('POST', `/upload/${streamData.streamId}`);
+            xhr.send(formData);
+
+        } catch (error) {
+            console.error('Upload error:', error);
+            showAlert('Upload failed. Please try again.', 'error');
+            uploadProgress.style.display = 'none';
         }
+    }
 
-        function createFileItem(file, index) {
-            const fileItem = document.createElement('div');
-            fileItem.className = 'file-item';
-            fileItem.dataset.filename = file.filename;
-            fileItem.dataset.index = index;
-
-            const fileIcon = file.type?.startsWith('video/') ? 'fas fa-video' : 'fas fa-music';
-            const iconColor = file.type?.startsWith('video/') ? 'var(--primary-color)' : 'var(--accent-color)';
-
-            fileItem.innerHTML = `
-        <div class="file-info">
-            <i class="${fileIcon}" style="color: ${iconColor};"></i>
-            <div>
-                <div style="font-weight: 600;">${file.filename}</div>
-                <div style="font-size: 0.75rem; color: var(--muted-text);">
-                    ${formatFileSize(file.size)} • ${file.resolution || file.bitrate || ''} • ${file.duration || ''}
+    // Playlist Management
+    function renderFilesList() {
+        const filesList = document.getElementById('filesList');
+        
+        // If no files, show empty state
+        if (!streamData.files || streamData.files.length === 0) {
+            filesList.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--muted-text);">
+                    <i class="fas fa-folder-open" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                    <p>No media files uploaded yet.</p>
+                    <p style="font-size: 0.875rem;">Upload some files to get started!</p>
                 </div>
-            </div>
-        </div>
-        <div style="display: flex; gap: 0.5rem; align-items: center;">
-            <button class="btn btn-ghost" style="padding: 0.5rem;" onclick="moveFile(${index}, 'up')">
-                <i class="fas fa-arrow-up"></i>
-            </button>
-            <button class="btn btn-ghost" style="padding: 0.5rem;" onclick="moveFile(${index}, 'down')">
-                <i class="fas fa-arrow-down"></i>
-            </button>
-            <button class="btn btn-danger" style="padding: 0.5rem;" onclick="deleteFile('${file.filename}')">
-                <i class="fas fa-trash"></i>
-            </button>
-        </div>
-    `;
-
-            return fileItem;
+            `;
+            return;
         }
 
-        function addFileToPlaylist(file) {
-            streamData.files.push(file);
-            renderFilesList();
+        filesList.innerHTML = '';
+        streamData.files.forEach((file, index) => {
+            const fileItem = createFileItem(file, index);
+            filesList.appendChild(fileItem);
+        });
+    }
+
+    function createFileItem(file, index) {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-item';
+        fileItem.dataset.filename = file.filename;
+        fileItem.dataset.index = index;
+
+        const fileIcon = file.type?.startsWith('video/') ? 'fas fa-video' : 'fas fa-music';
+        const iconColor = file.type?.startsWith('video/') ? 'var(--primary-color)' : 'var(--accent-color)';
+
+        fileItem.innerHTML = `
+            
+        `;
+
+        return fileItem;
+    }
+
+    function addFileToPlaylist(file) {
+        streamData.files.push(file);
+        renderFilesList();
+    }
+
+    function removeFileFromPlaylist(filename) {
+        streamData.files = streamData.files.filter(file => file.filename !== filename);
+        renderFilesList();
+    }
+
+    async function moveFile(index, direction) {
+        if (direction === 'up' && index > 0) {
+            [streamData.files[index], streamData.files[index - 1]] = [streamData.files[index - 1], streamData.files[index]];
+        } else if (direction === 'down' && index < streamData.files.length - 1) {
+            [streamData.files[index], streamData.files[index + 1]] = [streamData.files[index + 1], streamData.files[index]];
+        } else {
+            return;
         }
 
-        function removeFileFromPlaylist(filename) {
-            streamData.files = streamData.files.filter(file => file.filename !== filename);
-            renderFilesList();
-        }
-
-        async function moveFile(index, direction) {
-            if (direction === 'up' && index > 0) {
-                [streamData.files[index], streamData.files[index - 1]] = [streamData.files[index - 1], streamData.files[index]];
-            } else if (direction === 'down' && index < streamData.files.length - 1) {
-                [streamData.files[index], streamData.files[index + 1]] = [streamData.files[index + 1], streamData.files[index]];
-            } else {
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/playlist/reorder', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        streamId: streamData.streamId,
-                        files: streamData.files.map(f => f.filename)
-                    })
-                });
-
-                if (response.ok) {
-                    renderFilesList();
-                    showAlert('Playlist reordered successfully', 'success');
-                } else {
-                    throw new Error('Failed to reorder playlist');
-                }
-            } catch (error) {
-                console.error('Move file error:', error);
-                showAlert('Failed to reorder playlist', 'error');
-            }
-        }
-
-        async function deleteFile(filename) {
-            if (!confirm(`Are you sure you want to delete "${filename}"?`)) return;
-
-            try {
-                const response = await fetch('/api/files/delete', {
-                    method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        streamId: streamData.streamId,
-                        filename: filename
-                    })
-                });
-
-                if (response.ok) {
-                    removeFileFromPlaylist(filename);
-                    updateStreamStats();
-                    showAlert(`Deleted file: ${filename}`, 'success');
-                } else {
-                    throw new Error('Failed to delete file');
-                }
-            } catch (error) {
-                console.error('Delete file error:', error);
-                showAlert('Failed to delete file', 'error');
-            }
-        }
-
-        async function sortFiles(criteria) {
-            streamData.files.sort((a, b) => {
-                switch (criteria) {
-                    case 'name':
-                        return a.filename.localeCompare(b.filename);
-                    case 'size':
-                        return (b.size || 0) - (a.size || 0);
-                    case 'date':
-                        return new Date(b.uploadDate || 0) - new Date(a.uploadDate || 0);
-                    default:
-                        return 0;
-                }
+        try {
+            const response = await fetch('/api/playlist/reorder', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    streamId: streamData.streamId,
+                    files: streamData.files.map(f => f.filename)
+                })
             });
 
-            try {
-                const response = await fetch('/api/playlist/reorder', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        streamId: streamData.streamId,
-                        files: streamData.files.map(f => f.filename)
-                    })
-                });
-
-                if (response.ok) {
-                    renderFilesList();
-                    showAlert(`Sorted playlist by ${criteria}`, 'success');
-                }
-            } catch (error) {
-                console.error('Sort error:', error);
-                showAlert('Failed to sort playlist', 'error');
+            if (response.ok) {
+                renderFilesList();
+                showAlert('Playlist reordered successfully', 'success');
+            } else {
+                throw new Error('Failed to reorder playlist');
             }
+        } catch (error) {
+            console.error('Move file error:', error);
+            showAlert('Failed to reorder playlist', 'error');
+            // Revert the change on error
+            loadStreamData();
+        }
+    }
+
+    async function deleteFile(filename) {
+        if (!confirm(`Are you sure you want to delete "${filename}"?`)) return;
+
+        try {
+            const response = await fetch('/api/files/delete', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    streamId: streamData.streamId,
+                    filename: filename
+                })
+            });
+
+            if (response.ok) {
+                removeFileFromPlaylist(filename);
+                updateStreamStats();
+                showAlert(`Deleted file: ${filename}`, 'success');
+            } else {
+                throw new Error('Failed to delete file');
+            }
+        } catch (error) {
+            console.error('Delete file error:', error);
+            showAlert('Failed to delete file', 'error');
+        }
+    }
+
+    async function sortFiles(criteria) {
+        if (!streamData.files || streamData.files.length === 0) {
+            showAlert('No files to sort', 'error');
+            return;
         }
 
-        async function shufflePlaylist() {
-            for (let i = streamData.files.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [streamData.files[i], streamData.files[j]] = [streamData.files[j], streamData.files[i]];
+        streamData.files.sort((a, b) => {
+            switch (criteria) {
+                case 'name':
+                    return a.filename.localeCompare(b.filename);
+                case 'size':
+                    return (b.size || 0) - (a.size || 0);
+                case 'date':
+                    return new Date(b.uploadDate || 0) - new Date(a.uploadDate || 0);
+                default:
+                    return 0;
             }
+        });
 
-            try {
-                const response = await fetch('/api/playlist/reorder', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        streamId: streamData.streamId,
-                        files: streamData.files.map(f => f.filename)
-                    })
-                });
+        try {
+            const response = await fetch('/api/playlist/reorder', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    streamId: streamData.streamId,
+                    files: streamData.files.map(f => f.filename)
+                })
+            });
 
-                if (response.ok) {
-                    renderFilesList();
-                    showAlert('Playlist shuffled successfully', 'success');
-                }
-            } catch (error) {
-                console.error('Shuffle error:', error);
-                showAlert('Failed to shuffle playlist', 'error');
+            if (response.ok) {
+                renderFilesList();
+                showAlert(`Sorted playlist by ${criteria}`, 'success');
             }
+        } catch (error) {
+            console.error('Sort error:', error);
+            showAlert('Failed to sort playlist', 'error');
+        }
+    }
+
+    async function shufflePlaylist() {
+        if (!streamData.files || streamData.files.length === 0) {
+            showAlert('No files to shuffle', 'error');
+            return;
         }
 
-        // Stream Control Functions
-        async function startStream() {
-            const rtmpUrl = document.getElementById('rtmpUrl').value;
-            const streamKey = document.getElementById('streamKey').value;
-            const streamType = document.getElementById('streamType').value;
-
-            if (!rtmpUrl || !streamKey) {
-                showAlert('Please provide RTMP URL and Stream Key', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/stream/start', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        streamId: streamData.streamId,
-                        rtmpUrl: rtmpUrl,
-                        streamKey: streamKey,
-                        streamType: streamType,
-                        settings: getStreamSettings()
-                    })
-                });
-
-                const result = await response.json();
-                if (result.success) {
-                    updateStreamStatus(streamData.streamId, 'streaming', 'Stream started successfully!');
-                } else {
-                    throw new Error(result.message || 'Failed to start stream');
-                }
-            } catch (error) {
-                console.error('Start stream error:', error);
-                showAlert('Failed to start stream: ' + error.message, 'error');
-            }
+        for (let i = streamData.files.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [streamData.files[i], streamData.files[j]] = [streamData.files[j], streamData.files[i]];
         }
 
-        async function restartStream() {
-            try {
-                const response = await fetch('/api/stream/restart', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ streamId: streamData.streamId })
-                });
+        try {
+            const response = await fetch('/api/playlist/reorder', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    streamId: streamData.streamId,
+                    files: streamData.files.map(f => f.filename)
+                })
+            });
 
-                const result = await response.json();
-                if (result.success) {
-                    updateStreamStatus(streamData.streamId, 'streaming', 'Stream restarted successfully!');
-                } else {
-                    throw new Error(result.message || 'Failed to restart stream');
-                }
-            } catch (error) {
-                console.error('Restart stream error:', error);
-                showAlert('Failed to restart stream: ' + error.message, 'error');
+            if (response.ok) {
+                renderFilesList();
+                showAlert('Playlist shuffled successfully', 'success');
             }
+        } catch (error) {
+            console.error('Shuffle error:', error);
+            showAlert('Failed to shuffle playlist', 'error');
+        }
+    }
+
+    // Stream Control Functions
+    async function startStream() {
+        const rtmpUrl = document.getElementById('rtmpUrl').value;
+        const streamKey = document.getElementById('streamKey').value;
+        const streamType = document.getElementById('streamType').value;
+
+        if (!rtmpUrl || !streamKey) {
+            showAlert('Please provide RTMP URL and Stream Key', 'error');
+            return;
         }
 
-        async function stopStream() {
-            try {
-                const response = await fetch('/api/stream/stop', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ streamId: streamData.streamId })
-                });
-
-                const result = await response.json();
-                if (result.success) {
-                    updateStreamStatus(streamData.streamId, 'stopped', 'Stream stopped successfully.');
-                } else {
-                    throw new Error(result.message || 'Failed to stop stream');
-                }
-            } catch (error) {
-                console.error('Stop stream error:', error);
-                showAlert('Failed to stop stream: ' + error.message, 'error');
-            }
+        if (!streamData.files || streamData.files.length === 0) {
+            showAlert('Please upload at least one media file before starting the stream', 'error');
+            return;
         }
 
-        function getStreamSettings() {
-            const activePreset = document.querySelector('.preset-btn.active');
-            const preset = activePreset ? activePreset.textContent : 'custom';
+        try {
+            const response = await fetch('/start-stream', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    streamId: streamData.streamId,
+                    rtmpUrl: rtmpUrl,
+                    streamKey: streamKey,
+                    streamType: streamType,
+                    settings: getStreamSettings()
+                })
+            });
 
-            if (preset === 'Custom') {
+            const result = await response.json();
+            if (result.success) {
+                updateStreamStatus(streamData.streamId, 'streaming', 'Stream started successfully!');
+            } else {
+                throw new Error(result.message || 'Failed to start stream');
+            }
+        } catch (error) {
+            console.error('Start stream error:', error);
+            showAlert('Failed to start stream: ' + error.message, 'error');
+        }
+    }
+
+    async function restartStream() {
+        if (currentStatus !== 'streaming') {
+            showAlert('Stream is not currently running', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/stream/restart', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ streamId: streamData.streamId })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                updateStreamStatus(streamData.streamId, 'streaming', 'Stream restarted successfully!');
+            } else {
+                throw new Error(result.message || 'Failed to restart stream');
+            }
+        } catch (error) {
+            console.error('Restart stream error:', error);
+            showAlert('Failed to restart stream: ' + error.message, 'error');
+        }
+    }
+
+    async function stopStream() {
+        if (currentStatus === 'stopped') {
+            showAlert('Stream is already stopped', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/stream/stop', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ streamId: streamData.streamId })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                updateStreamStatus(streamData.streamId, 'stopped', 'Stream stopped successfully.');
+            } else {
+                throw new Error(result.message || 'Failed to stop stream');
+            }
+        } catch (error) {
+            console.error('Stop stream error:', error);
+            showAlert('Failed to stop stream: ' + error.message, 'error');
+        }
+    }
+
+    function getStreamSettings() {
+        const activePreset = document.querySelector('.preset-btn.active');
+        const preset = activePreset ? activePreset.textContent.trim() : 'custom';
+
+        if (preset === 'Custom') {
+            const customSettings = document.getElementById('customSettings');
+            if (customSettings.style.display !== 'none') {
                 return {
                     resolution: document.querySelector('#customSettings select').value,
                     bitrate: parseInt(document.querySelector('#customSettings input[type="number"]').value),
                     frameRate: parseInt(document.querySelector('#customSettings select:last-child').value)
                 };
             }
-
-            return { preset: preset.toLowerCase() };
         }
 
-        function updateUI() {
-            renderFilesList();
-            updateStreamStats();
-        }
+        return { preset: preset.toLowerCase().replace(' hd', '').replace(' fhd', '').replace(' sd', '') };
+    }
 
-        // Auto-refresh stream stats every 5 seconds when streaming
-        setInterval(() => {
-            if (currentStatus === 'streaming') {
-                loadStreamData();
-            }
-        }, 5000);
-    </script>
+    function updateUI() {
+        renderFilesList();
+        updateStreamStats();
+        
+        // Update stream title with actual streamId
+        const streamTitle = document.querySelector('.card-title');
+        if (streamTitle) {
+            streamTitle.innerHTML = `<i class="fas fa-video"></i> Stream: ${streamData.streamId}`;
+        }
+    }
+
+    // Auto-refresh stream stats every 5 seconds when streaming
+    setInterval(() => {
+        if (currentStatus === 'streaming') {
+            loadStreamData();
+        }
+    }, 5000);
+
+    // Handle page unload - warn if stream is running
+    window.addEventListener('beforeunload', (e) => {
+        if (currentStatus === 'streaming') {
+            e.preventDefault();
+            e.returnValue = 'Stream is currently running. Are you sure you want to leave?';
+        }
+    });
+</script>
 </body>
 
 </html>
