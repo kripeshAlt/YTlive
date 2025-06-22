@@ -1,14 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>
-        <%= title %> - Live Streaming Server
-    </title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title><%= title %> - Professional Live Streaming Server</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary-color: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary-color: #8b5cf6;
+            --accent-color: #06b6d4;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+            --dark-bg: #0f172a;
+            --dark-surface: #1e293b;
+            --dark-surface-2: #334155;
+            --light-text: #f8fafc;
+            --muted-text: #94a3b8;
+            --border-color: #334155;
+            --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -16,247 +37,443 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--dark-bg);
+            color: var(--light-text);
+            line-height: 1.6;
             min-height: 100vh;
-            color: #333;
+            background-image: 
+                radial-gradient(circle at 25% 25%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 1.5rem;
         }
 
         .header {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 30px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-xl);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-1);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
 
         .header h1 {
-            color: #2c3e50;
+            font-size: 2rem;
+            font-weight: 700;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 0.75rem;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
-        .header h1 i {
-            color: #e74c3c;
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .stats-pill {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.875rem;
+            font-weight: 500;
         }
 
         .card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-lg);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--light-text);
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 1.5rem;
         }
 
-        .form-group label {
+        .form-label {
             display: block;
-            margin-bottom: 5px;
-            color: #2c3e50;
-            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--light-text);
+            font-size: 0.875rem;
         }
 
         .form-control {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 14px;
+            padding: 0.875rem 1rem;
+            background: rgba(51, 65, 85, 0.5);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            color: var(--light-text);
+            font-size: 0.875rem;
             transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
         }
 
         .form-control:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            background: rgba(51, 65, 85, 0.8);
+        }
+
+        .form-control::placeholder {
+            color: var(--muted-text);
+        }
+
+        .select-control {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
         }
 
         .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            text-decoration: none;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-            text-align: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: var(--gradient-1);
             color: white;
+            box-shadow: var(--shadow-md);
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: var(--shadow-lg);
         }
 
         .btn-success {
-            background: linear-gradient(135deg, #56ab2f, #a8e6cf);
+            background: linear-gradient(135deg, var(--success-color), #059669);
             color: white;
-        }
-
-        .btn-success:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(86, 171, 47, 0.4);
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-            color: white;
-        }
-
-        .btn-danger:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+            box-shadow: var(--shadow-md);
         }
 
         .btn-warning {
-            background: linear-gradient(135deg, #f39c12, #e67e22);
+            background: linear-gradient(135deg, var(--warning-color), #d97706);
             color: white;
+            box-shadow: var(--shadow-md);
         }
 
-        .btn-warning:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(243, 156, 18, 0.4);
+        .btn-danger {
+            background: linear-gradient(135deg, var(--error-color), #dc2626);
+            color: white;
+            box-shadow: var(--shadow-md);
         }
 
-        .alert {
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        .btn-secondary {
+            background: rgba(51, 65, 85, 0.8);
+            color: var(--light-text);
+            border: 1px solid var(--border-color);
         }
 
-        .alert-success {
-            background: rgba(46, 204, 113, 0.1);
-            color: #27ae60;
-            border: 1px solid rgba(46, 204, 113, 0.2);
+        .btn-ghost {
+            background: transparent;
+            color: var(--muted-text);
+            border: 1px solid var(--border-color);
         }
 
-        .alert-error {
-            background: rgba(231, 76, 60, 0.1);
-            color: #e74c3c;
-            border: 1px solid rgba(231, 76, 60, 0.2);
+        .btn-ghost:hover {
+            background: rgba(51, 65, 85, 0.5);
+            color: var(--light-text);
         }
 
-        .status {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .status-streaming {
-            background: rgba(46, 204, 113, 0.2);
-            color: #27ae60;
-        }
-
-        .status-stopped {
-            background: rgba(149, 165, 166, 0.2);
-            color: #95a5a6;
-        }
-
-        .status-error {
-            background: rgba(231, 76, 60, 0.2);
-            color: #e74c3c;
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
         }
 
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
+            gap: 1.5rem;
         }
 
-        .file-item {
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: var(--success-color);
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: var(--error-color);
+        }
+
+        .status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-streaming {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success-color);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status-stopped {
+            background: rgba(148, 163, 184, 0.2);
+            color: var(--muted-text);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+        }
+
+        .status-error {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--error-color);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .status-created {
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--primary-color);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--muted-text);
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .stream-card {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stream-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-2);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .stream-card:hover::before {
+            opacity: 1;
+        }
+
+        .stream-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        .stream-info {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            padding: 12px;
-            background: rgba(52, 73, 94, 0.05);
-            border-radius: 8px;
-            margin-bottom: 10px;
+            align-items: flex-start;
+            margin-bottom: 1rem;
         }
 
-        .file-info {
+        .stream-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 0.5rem;
         }
 
-        .file-info i {
-            color: #3498db;
-        }
-
-        .controls {
+        .stream-meta {
             display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-top: 20px;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+            color: var(--muted-text);
         }
 
-        .upload-area {
-            border: 2px dashed #ddd;
-            border-radius: 8px;
-            padding: 30px;
-            text-align: center;
-            transition: all 0.3s ease;
+        .stream-actions {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: flex-end;
         }
 
-        .upload-area:hover {
-            border-color: #667eea;
-            background: rgba(102, 126, 234, 0.05);
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
         }
 
-        .progress-bar {
-            width: 100%;
-            height: 6px;
-            background: #ecf0f1;
-            border-radius: 3px;
-            overflow: hidden;
-            margin-top: 10px;
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #667eea, #764ba2);
-            width: 0%;
-            transition: width 0.3s ease;
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
         }
 
         @media (max-width: 768px) {
             .container {
-                padding: 10px;
+                padding: 1rem;
             }
-
-            .controls {
+            
+            .header {
+                padding: 1.5rem;
+            }
+            
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .card {
+                padding: 1.5rem;
+            }
+            
+            .header-content {
                 flex-direction: column;
+                align-items: flex-start;
             }
-
-            .btn {
-                width: 100%;
-                justify-content: center;
+            
+            .stream-info {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .stream-actions {
+                justify-content: flex-start;
             }
         }
     </style>
@@ -265,9 +482,18 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1><i class="fas fa-broadcast-tower"></i>
-                <%= title %>
-            </h1>
+            <div class="header-content">
+                <h1>
+                    <i class="fas fa-broadcast-tower"></i>
+                    <%= title %>
+                </h1>
+                <div class="header-actions">
+                    <div class="stats-pill">
+                        <i class="fas fa-signal"></i>
+                        <span id="activeStreams">0</span> Active Streams
+                    </div>
+                </div>
+            </div>
         </div>
 
         <%- body %>
@@ -287,23 +513,51 @@
             statusElements.forEach(el => {
                 el.className = `status status-${status}`;
                 el.textContent = status;
+                
+                // Add pulse animation for streaming status
+                if (status === 'streaming') {
+                    el.classList.add('pulse');
+                } else {
+                    el.classList.remove('pulse');
+                }
             });
+
+            // Update active streams counter
+            updateActiveStreamsCounter();
 
             if (message) {
                 showAlert(message, status === 'error' ? 'error' : 'success');
             }
         }
 
+        function updateActiveStreamsCounter() {
+            const streamingElements = document.querySelectorAll('.status-streaming');
+            const counter = document.getElementById('activeStreams');
+            if (counter) {
+                counter.textContent = streamingElements.length;
+            }
+        }
+
         function showAlert(message, type) {
+            // Remove existing alerts
+            const existingAlerts = document.querySelectorAll('.alert');
+            existingAlerts.forEach(alert => alert.remove());
+
             const alertDiv = document.createElement('div');
-            alertDiv.className = `alert alert-${type}`;
-            alertDiv.innerHTML = `<i class="fas fa-${type === 'error' ? 'exclamation-triangle' : 'check-circle'}"></i> ${message}`;
+            alertDiv.className = `alert alert-${type} fade-in`;
+            alertDiv.innerHTML = `
+                <i class="fas fa-${type === 'error' ? 'exclamation-triangle' : 'check-circle'}"></i>
+                ${message}
+            `;
 
             const container = document.querySelector('.container');
-            container.insertBefore(alertDiv, container.firstChild.nextSibling);
+            const header = document.querySelector('.header');
+            container.insertBefore(alertDiv, header.nextSibling);
 
             setTimeout(() => {
-                alertDiv.remove();
+                alertDiv.style.opacity = '0';
+                alertDiv.style.transform = 'translateY(-20px)';
+                setTimeout(() => alertDiv.remove(), 300);
             }, 5000);
         }
 
@@ -315,14 +569,32 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        // Update file sizes on page load
+        // Initialize on page load
         document.addEventListener('DOMContentLoaded', () => {
+            // Update file sizes
             document.querySelectorAll('.file-size').forEach(el => {
                 const size = parseInt(el.dataset.size);
                 el.textContent = formatFileSize(size);
             });
+
+            // Update active streams counter
+            updateActiveStreamsCounter();
+
+            // Add fade-in animation to cards
+            document.querySelectorAll('.card, .stream-card').forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+                card.classList.add('fade-in');
+            });
+
+            // Show URL parameter messages
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('success')) {
+                showAlert(urlParams.get('success'), 'success');
+            }
+            if (urlParams.get('error')) {
+                showAlert(urlParams.get('error'), 'error');
+            }
         });
     </script>
-</body>
-
+    </body>
 </html>

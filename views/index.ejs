@@ -1,49 +1,147 @@
+<!-- Enhanced Index Page -->
 <div class="card">
-    <h2><i class="fas fa-plus-circle"></i> Create New Stream</h2>
+    <div class="card-header">
+        <h2 class="card-title">
+            <i class="fas fa-plus-circle"></i>
+            Create New Stream
+        </h2>
+    </div>
+    
     <form action="/create-stream" method="POST">
         <div class="form-group">
-            <label for="streamId">Stream ID</label>
-            <input type="text" id="streamId" name="streamId" class="form-control" placeholder="Enter unique stream identifier" required>
+            <label for="streamId" class="form-label">Stream ID</label>
+            <input 
+                type="text" 
+                id="streamId" 
+                name="streamId" 
+                class="form-control" 
+                placeholder="Enter unique stream identifier (e.g., my-live-stream)" 
+                required
+                pattern="[a-zA-Z0-9-_]+"
+                title="Only letters, numbers, hyphens, and underscores are allowed"
+            >
+            <small style="color: var(--muted-text); font-size: 0.8rem; margin-top: 0.5rem; display: block;">
+                <i class="fas fa-info-circle"></i>
+                Use only letters, numbers, hyphens, and underscores
+            </small>
         </div>
+        
         <button type="submit" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Create Stream
+            <i class="fas fa-plus"></i>
+            Create Stream
         </button>
     </form>
 </div>
 
 <% if (streams && streams.length > 0) { %>
 <div class="card">
-    <h2><i class="fas fa-list"></i> Active Streams</h2>
-    <div class="grid">
+    <div class="card-header">
+        <h2 class="card-title">
+            <i class="fas fa-list"></i>
+            Your Streams
+        </h2>
+        <div class="stats-pill">
+            <%= streams.length %> Total
+        </div>
+    </div>
+    
+    <div class="grid grid-2">
         <% streams.forEach(stream => { %>
-        <div class="card">
-            <h3><i class="fas fa-video"></i> <%= stream.id %></h3>
-            <div style="margin: 15px 0;">
+        <div class="stream-card">
+            <div class="stream-info">
+                <div>
+                    <div class="stream-title">
+                        <i class="fas fa-video"></i>
+                        <%= stream.id %>
+                    </div>
+                    <div class="stream-meta">
+                        <span>
+                            <i class="fas fa-file"></i>
+                            <%= stream.fileCount %> files
+                        </span>
+                        <span>
+                            <i class="fas fa-clock"></i>
+                            Created recently
+                        </span>
+                    </div>
+                </div>
                 <span class="status status-<%= stream.status %>" data-stream-id="<%= stream.id %>">
                     <%= stream.status %>
                 </span>
-                <span style="margin-left: 10px; color: #7f8c8d;">
-                    <i class="fas fa-file"></i> <%= stream.fileCount %> files
-                </span>
             </div>
-            <a href="/stream/<%= stream.id %>" class="btn btn-primary">
-                <i class="fas fa-cog"></i> Manage Stream
-            </a>
+            
+            <div class="stream-actions">
+                <a href="/stream/<%= stream.id %>" class="btn btn-primary">
+                    <i class="fas fa-cog"></i>
+                    Manage
+                </a>
+                <% if (stream.status === 'streaming') { %>
+                <button class="btn btn-warning" onclick="quickStop('<%= stream.id %>')">
+                    <i class="fas fa-stop"></i>
+                    Stop
+                </button>
+                <% } %>
+            </div>
         </div>
         <% }) %>
     </div>
 </div>
 <% } else { %>
-<div class="card" style="text-align: center; padding: 50px;">
-    <i class="fas fa-broadcast-tower" style="font-size: 64px; color: #bdc3c7; margin-bottom: 20px;"></i>
-    <h3 style="color: #7f8c8d;">No streams created yet</h3>
-    <p style="color: #95a5a6;">Create your first stream to get started with live broadcasting</p>
+<div class="card">
+    <div class="empty-state">
+        <i class="fas fa-broadcast-tower"></i>
+        <h3>No streams created yet</h3>
+        <p>Create your first stream to get started with professional live broadcasting</p>
+        <div style="margin-top: 2rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                <div style="background: rgba(99, 102, 241, 0.1); padding: 1rem; border-radius: 0.5rem; border: 1px solid rgba(99, 102, 241, 0.2);">
+                    <i class="fas fa-upload" style="color: var(--primary-color); margin-bottom: 0.5rem;"></i>
+                    <h4 style="font-size: 0.9rem; margin-bottom: 0.5rem;">Upload Media</h4>
+                    <p style="font-size: 0.8rem; color: var(--muted-text);">Upload videos and audio files for streaming</p>
+                </div>
+                <div style="background: rgba(16, 185, 129, 0.1); padding: 1rem; border-radius: 0.5rem; border: 1px solid rgba(16, 185, 129, 0.2);">
+                    <i class="fas fa-play" style="color: var(--success-color); margin-bottom: 0.5rem;"></i>
+                    <h4 style="font-size: 0.9rem; margin-bottom: 0.5rem;">Live Stream</h4>
+                    <p style="font-size: 0.8rem; color: var(--muted-text);">Stream to YouTube, Twitch, and more</p>
+                </div>
+                <div style="background: rgba(139, 92, 246, 0.1); padding: 1rem; border-radius: 0.5rem; border: 1px solid rgba(139, 92, 246, 0.2);">
+                    <i class="fas fa-list" style="color: var(--secondary-color); margin-bottom: 0.5rem;"></i>
+                    <h4 style="font-size: 0.9rem; margin-bottom: 0.5rem;">Playlist Loop</h4>
+                    <p style="font-size: 0.8rem; color: var(--muted-text);">Automatically loop through your content</p>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 <% } %>
 
-<% if (typeof query !== 'undefined' && query.error) { %>
 <script>
-    showAlert('<%= query.error %>', 'error');
-</script>
-<% } %>
+    async function quickStop(streamId) {
+        if (!confirm('Are you sure you want to stop this stream?')) {
+            return;
+        }
 
+        try {
+            const response = await fetch(`/stop-stream/${streamId}`, {
+                method: 'POST'
+            });
+
+            const result = await response.json();
+            showAlert(result.message, result.success ? 'success' : 'error');
+        } catch (error) {
+            showAlert('Error stopping stream: ' + error.message, 'error');
+        }
+    }
+
+    // Form validation
+    document.getElementById('streamId').addEventListener('input', function(e) {
+        const value = e.target.value;
+        const isValid = /^[a-zA-Z0-9-_]*$/.test(value);
+        
+        if (!isValid && value !== '') {
+            e.target.style.borderColor = 'var(--error-color)';
+        } else {
+            e.target.style.borderColor = 'var(--border-color)';
+        }
+    });
+</script>
