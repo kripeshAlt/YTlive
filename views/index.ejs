@@ -1,0 +1,49 @@
+<div class="card">
+    <h2><i class="fas fa-plus-circle"></i> Create New Stream</h2>
+    <form action="/create-stream" method="POST">
+        <div class="form-group">
+            <label for="streamId">Stream ID</label>
+            <input type="text" id="streamId" name="streamId" class="form-control" placeholder="Enter unique stream identifier" required>
+        </div>
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Create Stream
+        </button>
+    </form>
+</div>
+
+<% if (streams && streams.length > 0) { %>
+<div class="card">
+    <h2><i class="fas fa-list"></i> Active Streams</h2>
+    <div class="grid">
+        <% streams.forEach(stream => { %>
+        <div class="card">
+            <h3><i class="fas fa-video"></i> <%= stream.id %></h3>
+            <div style="margin: 15px 0;">
+                <span class="status status-<%= stream.status %>" data-stream-id="<%= stream.id %>">
+                    <%= stream.status %>
+                </span>
+                <span style="margin-left: 10px; color: #7f8c8d;">
+                    <i class="fas fa-file"></i> <%= stream.fileCount %> files
+                </span>
+            </div>
+            <a href="/stream/<%= stream.id %>" class="btn btn-primary">
+                <i class="fas fa-cog"></i> Manage Stream
+            </a>
+        </div>
+        <% }) %>
+    </div>
+</div>
+<% } else { %>
+<div class="card" style="text-align: center; padding: 50px;">
+    <i class="fas fa-broadcast-tower" style="font-size: 64px; color: #bdc3c7; margin-bottom: 20px;"></i>
+    <h3 style="color: #7f8c8d;">No streams created yet</h3>
+    <p style="color: #95a5a6;">Create your first stream to get started with live broadcasting</p>
+</div>
+<% } %>
+
+<% if (typeof query !== 'undefined' && query.error) { %>
+<script>
+    showAlert('<%= query.error %>', 'error');
+</script>
+<% } %>
+
