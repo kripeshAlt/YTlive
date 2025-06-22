@@ -4,6 +4,7 @@
   const http = require('http');
   const socketIo = require('socket.io');
   const multer = require('multer');
+  const expressLayouts = require('express-ejs-layouts');
   const path = require('path');
   const fs = require('fs-extra');
   const { v4: uuidv4 } = require('uuid');
@@ -34,6 +35,9 @@
   app.use(express.static('public'));
   app.set('view engine', 'ejs');
   app.set('views', path.join(__dirname, 'views'));
+  // this will use views/layout.ejs as default
+  app.use(expressLayouts);
+  app.set('layout', 'layout'); 
   
   // Multer configuration for file uploads
   const storage = multer.diskStorage({
