@@ -90,7 +90,10 @@
     }
   
     const files = getStreamFiles(streamId);
-    
+    totalSize = 0;
+    files.forEach(file => {
+        totalSize += file.size;
+    });
     console.log(files);
     
     const status = streamStatus.get(streamId) || 'stopped';
@@ -99,7 +102,8 @@
       title: `Stream: ${streamId}`,
       streamId,
       files,
-      status
+      status,
+      totalSize
     });
   });
   

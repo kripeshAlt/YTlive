@@ -393,26 +393,26 @@
                         Configure your live streaming settings and manage your content
                     </p>
                 </div>
-                <span class="status status-<%= stream.status %>" data-stream-id="<%= streamId %>">
-                    <%= stream.status %>
+                <span class="status status- <%= status %>" data-stream-id="<%= streamId %>">
+                    <%= status %>
                 </span>
             </div>
 
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-value" id="fileCount"><%= stream.stats.fileCount || 0 %></div>
+                    <div class="stat-value" id="fileCount"><%=  0 %></div>
                     <div class="stat-label">Media Files</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value" id="totalSize"><%= stream.stats.totalSize || '0 B' %></div>
+                    <div class="stat-value" id="totalSize"><%= totalSize || '0 B' %></div>
                     <div class="stat-label">Total Size</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value" id="duration"><%= stream.stats.duration || '--:--' %></div>
+                    <div class="stat-value" id="duration"><%=  '--:--' %></div>
                     <div class="stat-label">Stream Duration</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value" id="viewers"><%= stream.stats.viewers || 0 %></div>
+                    <div class="stat-value" id="viewers"><%=  0 %></div>
                     <div class="stat-label">Viewers</div>
                 </div>
             </div>
@@ -431,8 +431,8 @@
                 <div class="form-group">
                     <label class="form-label">Stream Type</label>
                     <select id="streamType" class="form-control select-control" onchange="toggleStreamOptions()">
-                        <option value="video" <%= stream.settings.streamType === 'video' ? 'selected' : '' %>>Video + Audio</option>
-                        <option value="audio" <%= stream.settings.streamType === 'audio' ? 'selected' : '' %>>Audio Only</option>
+                        <option value="video" selected>Video + Audio</option>
+                        <option value="audio" >Audio Only</option>
                     </select>
                 </div>
 
@@ -681,7 +681,6 @@
             dataSent: 0
         }
     };
-    console.log(streamData.files)
 
     // Initialize on page load
     document.addEventListener('DOMContentLoaded', function () {
@@ -724,7 +723,7 @@
     // Load initial stream data
     async function loadStreamData() {
         try {
-            const response = await fetch(`/api/streams/${streamData.streamId}`);
+            const response = await fetch(`/streams/${streamData.streamId}`);
             const data = await response.json();
             if (data.success) {
                 streamData = { ...streamData, ...data.stream };
@@ -749,38 +748,7 @@
         }
     }
 
-    function updateStreamStats(data = null) {
-        if (data) {
-            streamData.stats = { ...streamData.stats, ...data };
-        }
 
-        // Update file stats
-        streamData.stats.fileCount = streamData.files.length;
-        streamData.stats.totalSize = streamData.files.reduce((total, file) => total + (file.size || 0), 0);
-
-        // Update UI elements
-        document.getElementById('fileCount').textContent = streamData.stats.fileCount;
-        document.getElementById('totalSize').textContent = formatFileSize(streamData.stats.totalSize);
-        document.getElementById('duration').textContent = formatDuration(streamData.stats.duration);
-        document.getElementById('viewers').textContent = streamData.stats.viewers;
-
-        // Update analytics
-        const analyticsElements = {
-            uptime: document.querySelector('.stat-card .stat-value[style*="success-color"]'),
-            avgBitrate: document.querySelector('.stat-card .stat-value[style*="warning-color"]'),
-            frameRate: document.querySelector('.stat-card .stat-value[style*="accent-color"]'),
-            latency: document.querySelectorAll('.stat-card .stat-value')[3],
-            droppedFrames: document.querySelectorAll('.stat-card .stat-value')[4],
-            dataSent: document.querySelectorAll('.stat-card .stat-value')[5]
-        };
-
-        if (analyticsElements.uptime) analyticsElements.uptime.textContent = `${streamData.stats.uptime.toFixed(1)}%`;
-        if (analyticsElements.avgBitrate) analyticsElements.avgBitrate.textContent = `${streamData.stats.avgBitrate.toFixed(1)} Mbps`;
-        if (analyticsElements.frameRate) analyticsElements.frameRate.textContent = `${streamData.stats.frameRate} fps`;
-        if (analyticsElements.latency) analyticsElements.latency.textContent = `${streamData.stats.latency}ms`;
-        if (analyticsElements.droppedFrames) analyticsElements.droppedFrames.textContent = streamData.stats.droppedFrames;
-        if (analyticsElements.dataSent) analyticsElements.dataSent.textContent = formatFileSize(streamData.stats.dataSent);
-    }
 
     function formatDuration(seconds) {
         const hours = Math.floor(seconds / 3600);
@@ -957,27 +925,7 @@
     }
 
     // Playlist Management
-    function renderFilesList() {
-        const filesList = document.getElementById('filesList');
-        
-        // If no files, show empty state
-        if (!streamData.files || streamData.files.length === 0) {
-            filesList.innerHTML = `
-                <div style="text-align: center; padding: 2rem; color: var(--muted-text);">
-                    <i class="fas fa-folder-open" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
-                    <p>No media files uploaded yet.</p>
-                    <p style="font-size: 0.875rem;">Upload some files to get started!</p>
-                </div>
-            `;
-            return;
-        }
-
-        filesList.innerHTML = '';
-        streamData.files.forEach((file, index) => {
-            const fileItem = createFileItem(file, index);
-            filesList.appendChild(fileItem);
-        });
-    }
+    
 
     function createFileItem(file, index) {
         const fileItem = document.createElement('div');
@@ -988,22 +936,9 @@
         const fileIcon = file.type?.startsWith('video/') ? 'fas fa-video' : 'fas fa-music';
         const iconColor = file.type?.startsWith('video/') ? 'var(--primary-color)' : 'var(--accent-color)';
 
-        fileItem.innerHTML = `
-            
-        `;
-
-        return fileItem;
+        
     }
 
-    function addFileToPlaylist(file) {
-        streamData.files.push(file);
-        renderFilesList();
-    }
-
-    function removeFileFromPlaylist(filename) {
-        streamData.files = streamData.files.filter(file => file.filename !== filename);
-        renderFilesList();
-    }
 
     async function moveFile(index, direction) {
         if (direction === 'up' && index > 0) {
@@ -1151,7 +1086,7 @@
         }
 
         try {
-            const response = await fetch('/start-stream', {
+            const response = await fetch('/stream-start', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -1269,6 +1204,7 @@
         }
     });
 </script>
+    
 </body>
 
 </html>
