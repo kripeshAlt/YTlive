@@ -424,7 +424,7 @@ function getStreamFiles(streamId) {
 function startStreaming(streamId, rtmpUrl, streamKey, files) {
   const fullRtmpUrl = `${rtmpUrl}/${streamKey}`;
   
-  console.log('Starting stream:', {
+  console.log('Starting 1080p stream:', {
     streamId,
     rtmpUrl: fullRtmpUrl,
     videoCount: files.video.length,
@@ -478,24 +478,24 @@ function startStreaming(streamId, rtmpUrl, streamKey, files) {
 
   // Configure output based on what inputs we have
   if (files.video.length > 0 && files.audio.length > 0) {
-    // Both video and audio - mix them
+    // Both video and audio - mix them at 1080p
     ffmpegCommand = ffmpegCommand
       .complexFilter([
-        '[0:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2[video]',
+        '[0:v]scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2[video]',
         '[1:a]volume=1[audio]'
       ])
       .map('[video]')
       .map('[audio]');
   } else if (files.video.length > 0) {
-    // Only video - use video audio if available, otherwise add silence
+    // Only video - use video audio if available, otherwise add silence at 1080p
     ffmpegCommand = ffmpegCommand
-      .videoFilter('scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2')
+      .videoFilter('scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2')
       .audioCodec('aac')
       .audioFrequency(44100);
   } else if (files.audio.length > 0) {
-    // Only audio - create a blank video with the audio
+    // Only audio - create a blank 1080p video with the audio
     ffmpegCommand = ffmpegCommand
-      .inputOptions(['-f lavfi', '-i color=c=black:s=1280x720:r=30'])
+      .inputOptions(['-f lavfi', '-i color=c=black:s=1920x1080:r=30'])
       .complexFilter([
         '[1:a]volume=1[audio]'
       ])
@@ -510,9 +510,9 @@ function startStreaming(streamId, rtmpUrl, streamKey, files) {
     .outputOptions([
       '-preset veryfast',
       '-tune zerolatency',
-      '-b:v 2500k',
-      '-maxrate 2500k',
-      '-bufsize 5000k',
+      '-b:v 4500k',        // Increased bitrate for 1080p
+      '-maxrate 4500k',    // Increased max bitrate for 1080p
+      '-bufsize 9000k',    // Increased buffer size for 1080p
       '-b:a 128k',
       '-ar 44100',
       '-g 60',
