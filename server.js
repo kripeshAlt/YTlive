@@ -46,19 +46,24 @@ app.locals.formatFileSize = function(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 };
 
-// Helper function to determine if file is video or audio
+// Enhanced file type detection with better image handling
 function getFileType(mimetype, filename) {
   const ext = path.extname(filename).toLowerCase();
   
-  // Video formats
-  const videoExts = ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm', '.mkv', '.3gp'];
-  // Audio formats
-  const audioExts = ['.mp3', '.wav', '.m4a', '.aac', '.ogg'];
-  // Image formats (treated as video for streaming)
-  const imageExts = ['.jpeg', '.jpg', '.png', '.gif'];
+  // Video formats (including common video containers)
+  const videoExts = ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm', '.mkv', '.3gp', '.m4v', '.ts', '.mts'];
   
-  if (videoExts.includes(ext) || imageExts.includes(ext) || mimetype.startsWith('video/') || mimetype.startsWith('image/')) {
+  // Audio formats
+  const audioExts = ['.mp3', '.wav', '.m4a', '.aac', '.ogg', '.flac', '.wma'];
+  
+  // Image formats (will be treated as video content for streaming)
+  const imageExts = ['.jpeg', '.jpg', '.png', '.gif', '.bmp', '.tiff', '.tif', '.webp', '.svg'];
+  
+  // Check by extension first, then by mimetype
+  if (videoExts.includes(ext) || mimetype.startsWith('video/')) {
     return 'video';
+  } else if (imageExts.includes(ext) || mimetype.startsWith('image/')) {
+    return 'video'; // Images go to video section for streaming
   } else if (audioExts.includes(ext) || mimetype.startsWith('audio/')) {
     return 'audio';
   }
@@ -66,7 +71,49 @@ function getFileType(mimetype, filename) {
   return 'unknown';
 }
 
-// Multer configuration for file uploads
+// Enhanced file type checker for upload validation
+function isValidMediaFile(mimetype, filename) {
+  const ext = path.extname(filename).toLowerCase();
+  
+  const validVideoExts = ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm', '.mkv', '.3gp', '.m4v', '.ts', '.mts'];
+  const validAudioExts = ['.mp3', '.wav', '.m4a', '.aac', '.ogg', '.flac', '.wma'];
+  const validImageExts = ['.jpeg', '.jpg', '.png', '.gif', '.bmp', '.tiff', '.tif', '.webp'];
+  
+  const validExts = [...validVideoExts, ...validAudioExts, ...validImageExts];
+  const validMimetypes = ['video/', 'audio/', 'image/'];
+  
+  const extValid = validExts.includes(ext);
+  const mimetypeValid = validMimetypes.some(type => mimetype.startsWith(type));
+  
+  return extValid && mimetypeValid;
+}
+
+// Get detailed file info including media type
+function getFileInfo(filePath, filename, mimetype) {
+  const stats = fs.statSync(filePath);
+  const ext = path.extname(filename).toLowerCase();
+  
+  let mediaType = 'unknown';
+  if (['.jpeg', '.jpg', '.png', '.gif', '.bmp', '.tiff', '.tif', '.webp'].includes(ext) || mimetype.startsWith('image/')) {
+    mediaType = 'image';
+  } else if (['.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm', '.mkv', '.3gp', '.m4v', '.ts', '.mts'].includes(ext) || mimetype.startsWith('video/')) {
+    mediaType = 'video';
+  } else if (['.mp3', '.wav', '.m4a', '.aac', '.ogg', '.flac', '.wma'].includes(ext) || mimetype.startsWith('audio/')) {
+    mediaType = 'audio';
+  }
+  
+  return {
+    name: filename,
+    path: filePath,
+    size: stats.size,
+    modified: stats.mtime,
+    extension: ext,
+    mediaType: mediaType,
+    type: getFileType(mimetype, filename) // For folder organization
+  };
+}
+
+// Multer configuration for file uploads with enhanced image support
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const streamId = req.params.streamId || req.body.streamId;
@@ -74,7 +121,13 @@ const storage = multer.diskStorage({
     const streamDir = path.join(UPLOADS_DIR, streamId);
     const typeDir = path.join(streamDir, fileType === 'video' ? 'video' : 'audio');
     
-    console.log('Upload destination:', { streamId, fileType, typeDir });
+    console.log('Upload destination:', { 
+      streamId, 
+      fileType, 
+      typeDir, 
+      originalName: file.originalname,
+      mimetype: file.mimetype 
+    });
     
     fs.ensureDirSync(typeDir);
     cb(null, typeDir);
@@ -91,22 +144,18 @@ const upload = multer({
     fileSize: 500 * 1024 * 1024, // 500MB limit
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /mp4|jpeg|jpg|png|gif|mp3|mpeg|wav|avi|mov|wmv|flv|webm|m4a|aac|mkv|ogg|3gp/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    
-    console.log('File filter:', {
+    console.log('File filter check:', {
       filename: file.originalname,
       mimetype: file.mimetype,
-      extname: path.extname(file.originalname).toLowerCase(),
-      allowed: mimetype && extname,
-      type: getFileType(file.mimetype, file.originalname)
+      extension: path.extname(file.originalname).toLowerCase()
     });
     
-    if (mimetype && extname) {
+    if (isValidMediaFile(file.mimetype, file.originalname)) {
+      console.log('File accepted:', file.originalname);
       return cb(null, true);
     } else {
-      cb(new Error('Only audio and video files are allowed! Supported formats: MP4, MP3, WAV, AVI, MOV, WMV, FLV, WebM, M4A, AAC, MKV, OGG, 3GP'));
+      console.log('File rejected:', file.originalname);
+      cb(new Error('Invalid file type! Supported formats: Video (MP4, AVI, MOV, WMV, FLV, WebM, MKV, 3GP), Audio (MP3, WAV, M4A, AAC, OGG, FLAC), Images (JPEG, PNG, GIF, BMP, TIFF, WebP)'));
     }
   }
 });
@@ -190,12 +239,27 @@ app.post('/upload/:streamId', upload.array('files', 10), (req, res) => {
 
   const uploadSummary = req.files.reduce((acc, file) => {
     const fileType = getFileType(file.mimetype, file.originalname);
-    acc[fileType] = (acc[fileType] || 0) + 1;
+    const ext = path.extname(file.originalname).toLowerCase();
+    
+    if (['.jpeg', '.jpg', '.png', '.gif', '.bmp', '.tiff', '.tif', '.webp'].includes(ext)) {
+      acc.images = (acc.images || 0) + 1;
+    } else if (fileType === 'video') {
+      acc.videos = (acc.videos || 0) + 1;
+    } else if (fileType === 'audio') {
+      acc.audio = (acc.audio || 0) + 1;
+    }
+    
     return acc;
   }, {});
 
   console.log('Uploaded files summary:', uploadSummary);
-  const message = `${req.files.length} files uploaded successfully (${uploadSummary.video || 0} video, ${uploadSummary.audio || 0} audio)`;
+  
+  const parts = [];
+  if (uploadSummary.videos) parts.push(`${uploadSummary.videos} video${uploadSummary.videos > 1 ? 's' : ''}`);
+  if (uploadSummary.images) parts.push(`${uploadSummary.images} image${uploadSummary.images > 1 ? 's' : ''}`);
+  if (uploadSummary.audio) parts.push(`${uploadSummary.audio} audio${uploadSummary.audio > 1 ? 's' : ''}`);
+  
+  const message = `${req.files.length} files uploaded successfully (${parts.join(', ')})`;
   res.redirect(`/stream/${streamId}?success=${encodeURIComponent(message)}`);
 });
 
@@ -370,23 +434,36 @@ function getStreamFiles(streamId) {
     const streamDir = path.join(UPLOADS_DIR, streamId);
     if (!fs.existsSync(streamDir)) return result;
     
-    // Get video files
+    // Get video files (including images)
     const videoDir = path.join(streamDir, 'video');
     if (fs.existsSync(videoDir)) {
       result.video = fs.readdirSync(videoDir)
         .filter(file => {
           const ext = path.extname(file).toLowerCase();
-          return ['.mp4', '.jpeg', '.jpg', '.png', '.gif', '.avi', '.mov', '.wmv', '.flv', '.webm', '.mkv', '.3gp'].includes(ext);
+          // Include all video formats and images
+          return [
+            // Video formats
+            '.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm', '.mkv', '.3gp', '.m4v', '.ts', '.mts',
+            // Image formats
+            '.jpeg', '.jpg', '.png', '.gif', '.bmp', '.tiff', '.tif', '.webp'
+          ].includes(ext);
         })
         .map(file => {
           const filePath = path.join(videoDir, file);
           const stats = fs.statSync(filePath);
+          const ext = path.extname(file).toLowerCase();
+          
+          // Determine if it's an image or video
+          const mediaType = ['.jpeg', '.jpg', '.png', '.gif', '.bmp', '.tiff', '.tif', '.webp'].includes(ext) ? 'image' : 'video';
+          
           return {
             name: file,
             path: filePath,
             size: stats.size,
             modified: stats.mtime,
-            type: 'video'
+            type: 'video', // Still goes in video section
+            mediaType: mediaType, // But we know what it actually is
+            extension: ext
           };
         })
         .sort((a, b) => a.modified - b.modified);
@@ -398,7 +475,7 @@ function getStreamFiles(streamId) {
       result.audio = fs.readdirSync(audioDir)
         .filter(file => {
           const ext = path.extname(file).toLowerCase();
-          return ['.mp3', '.wav', '.m4a', '.aac', '.ogg'].includes(ext);
+          return ['.mp3', '.wav', '.m4a', '.aac', '.ogg', '.flac', '.wma'].includes(ext);
         })
         .map(file => {
           const filePath = path.join(audioDir, file);
@@ -408,7 +485,9 @@ function getStreamFiles(streamId) {
             path: filePath,
             size: stats.size,
             modified: stats.mtime,
-            type: 'audio'
+            type: 'audio',
+            mediaType: 'audio',
+            extension: path.extname(file).toLowerCase()
           };
         })
         .sort((a, b) => a.modified - b.modified);
@@ -424,11 +503,12 @@ function getStreamFiles(streamId) {
 function startStreaming(streamId, rtmpUrl, streamKey, files) {
   const fullRtmpUrl = `${rtmpUrl}/${streamKey}`;
   
-  console.log('Starting 1080p stream:', {
+  console.log('Starting 1080p stream with enhanced image support:', {
     streamId,
     rtmpUrl: fullRtmpUrl,
     videoCount: files.video.length,
-    audioCount: files.audio.length
+    audioCount: files.audio.length,
+    videoFiles: files.video.map(f => ({ name: f.name, mediaType: f.mediaType }))
   });
 
   // Create playlist files for both video and audio
@@ -438,12 +518,27 @@ function startStreaming(streamId, rtmpUrl, streamKey, files) {
   let ffmpegCommand = ffmpeg();
   let inputIndex = 0;
   
-  // Handle video files
+  // Handle video files (including images)
   if (files.video.length > 0) {
-    const videoPlaylistContent = files.video.map(file => 
-      `file '${file.path.replace(/'/g, "\\'")}'`
-    ).join('\n');
-    fs.writeFileSync(videoPlaylistPath, videoPlaylistContent);
+    const videoPlaylistContent = files.video.map(file => {
+      const escapedPath = file.path.replace(/'/g, "\\'");
+      // For images, we'll set a duration (5 seconds per image by default)
+      if (file.mediaType === 'image') {
+        return `file '${escapedPath}'\nduration 5.0`;
+      } else {
+        return `file '${escapedPath}'`;
+      }
+    }).join('\n');
+    
+    // Add final image duration for proper looping
+    const lastFile = files.video[files.video.length - 1];
+    if (lastFile.mediaType === 'image') {
+      const finalContent = videoPlaylistContent + `\nfile '${lastFile.path.replace(/'/g, "\\'")}'`;
+      fs.writeFileSync(videoPlaylistPath, finalContent);
+    } else {
+      fs.writeFileSync(videoPlaylistPath, videoPlaylistContent);
+    }
+    
     console.log('Video playlist created:', videoPlaylistPath);
     
     ffmpegCommand = ffmpegCommand
@@ -488,10 +583,23 @@ function startStreaming(streamId, rtmpUrl, streamKey, files) {
       .map('[audio]');
   } else if (files.video.length > 0) {
     // Only video - use video audio if available, otherwise add silence at 1080p
-    ffmpegCommand = ffmpegCommand
-      .videoFilter('scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2')
-      .audioCodec('aac')
-      .audioFrequency(44100);
+    const hasImages = files.video.some(f => f.mediaType === 'image');
+    
+    if (hasImages) {
+      // For images, we need to ensure proper frame rate and add audio
+      ffmpegCommand = ffmpegCommand
+        .complexFilter([
+          '[0:v]scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,fps=30[video]'
+        ])
+        .map('[video]')
+        .inputOptions(['-f lavfi', '-i anullsrc=channel_layout=stereo:sample_rate=44100'])
+        .map('1:a');
+    } else {
+      ffmpegCommand = ffmpegCommand
+        .videoFilter('scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2')
+        .audioCodec('aac')
+        .audioFrequency(44100);
+    }
   } else if (files.audio.length > 0) {
     // Only audio - create a blank 1080p video with the audio
     ffmpegCommand = ffmpegCommand
@@ -674,6 +782,11 @@ server.listen(PORT, () => {
   console.log(`📺 Access the application at http://localhost:${PORT}`);
   console.log(`📁 Uploads directory: ${UPLOADS_DIR}`);
   console.log(`🎬 Streams directory: ${STREAMS_DIR}`);
+  console.log(`🖼️  Enhanced image support: Images will be treated as video content`);
+  console.log(`📋 Supported formats:`);
+  console.log(`   - Videos: MP4, AVI, MOV, WMV, FLV, WebM, MKV, 3GP, M4V, TS, MTS`);
+  console.log(`   - Images: JPEG, PNG, GIF, BMP, TIFF, WebP (5 seconds each)`);
+  console.log(`   - Audio: MP3, WAV, M4A, AAC, OGG, FLAC, WMA`);
 });
 
 // Graceful shutdown
